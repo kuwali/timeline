@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { TimelineEvent } from '../types/TimelineEvent'
 import type { Category } from '../types/Category'
+import { getNextOccurrence } from '../utils/timeCalc'
 import {
     getAllEvents, addEvent, updateEvent, deleteEvent,
     getAllCategories, addCategory as addCategoryDB,
@@ -34,20 +35,31 @@ export function useEvents() {
         (list: TimelineEvent[]): TimelineEvent[] => {
             if (sortMode === 'auto') {
                 const now = Date.now()
-                const past: TimelineEvent[] = []
-                const future: TimelineEvent[] = []
+
+                // Compute effective date for each event (handles recurring)
+                function getEffective(e: TimelineEvent): number {
+                    let date = new Date(e.anchorDate)
+                    if (e.recurrenceRule) {
+                        date = getNextOccurrence(date, e.recurrenceRule)
+                    }
+                    return date.getTime()
+                }
+
+                const past: { event: TimelineEvent; time: number }[] = []
+                const future: { event: TimelineEvent; time: number }[] = []
                 for (const e of list) {
-                    if (new Date(e.anchorDate).getTime() <= now) {
-                        past.push(e)
+                    const time = getEffective(e)
+                    if (time <= now) {
+                        past.push({ event: e, time })
                     } else {
-                        future.push(e)
+                        future.push({ event: e, time })
                     }
                 }
                 // Past: most recent first (descending)
-                past.sort((a, b) => new Date(b.anchorDate).getTime() - new Date(a.anchorDate).getTime())
+                past.sort((a, b) => b.time - a.time)
                 // Future: nearest first (ascending)
-                future.sort((a, b) => new Date(a.anchorDate).getTime() - new Date(b.anchorDate).getTime())
-                return [...past, ...future]
+                future.sort((a, b) => a.time - b.time)
+                return [...past.map(p => p.event), ...future.map(f => f.event)]
             }
             return [...list].sort((a, b) => a.sortOrder - b.sortOrder)
         },

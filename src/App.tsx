@@ -98,34 +98,10 @@ export function App() {
         }
     }
 
-    // Auto-hide header on scroll down, show on scroll up or idle
-    const [headerHidden, setHeaderHidden] = useState(false)
+    // Scroll-to-today FAB: track TODAY marker position
     const [todayDirection, setTodayDirection] = useState<'up' | 'down' | null>(null)
-    const lastScrollY = useRef(0)
-    const idleTimer = useRef<ReturnType<typeof setTimeout>>()
-    const scrollingDown = useRef(false)
 
     const handleScroll = useCallback(() => {
-        const currentY = window.scrollY
-        const delta = currentY - lastScrollY.current
-
-        // Only toggle header if scroll delta is significant (avoids jitter)
-        if (delta > 5 && currentY > 80) {
-            scrollingDown.current = true
-            setHeaderHidden(true)
-        } else if (delta < -5) {
-            scrollingDown.current = false
-            setHeaderHidden(false)
-        }
-        lastScrollY.current = currentY
-
-        // Show header after idle
-        clearTimeout(idleTimer.current)
-        idleTimer.current = setTimeout(() => {
-            setHeaderHidden(false)
-        }, 800)
-
-        // Determine TODAY marker direction for FAB
         const todayEl = document.querySelector('[data-today-marker]')
         if (todayEl) {
             const rect = todayEl.getBoundingClientRect()
@@ -135,14 +111,13 @@ export function App() {
             } else if (rect.top > viewH + 100) {
                 setTodayDirection('down')
             } else {
-                setTodayDirection(null) // TODAY is visible
+                setTodayDirection(null)
             }
         }
     }, [])
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll, { passive: true })
-        // Initial check
         handleScroll()
         return () => window.removeEventListener('scroll', handleScroll)
     }, [handleScroll])
@@ -163,7 +138,7 @@ export function App() {
                 onChange={handleImportFile}
             />
 
-            <header className={`app-header ${headerHidden ? 'app-header--hidden' : ''}`}>
+            <header className="app-header">
                 <div className="app-header__inner">
                     <div className="app-header__brand">
                         <SettingsMenu

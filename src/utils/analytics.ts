@@ -46,3 +46,11 @@ export function trackDataExported() {
 export function trackDataImported() {
     trackEvent('data_imported')
 }
+
+export function trackEventOpened(categoryId?: string) {
+    trackEvent('timeline_event_opened', { category_id: categoryId || 'other' })
+}
+
+export function trackCategoryFiltered(categoryId: string | null) {
+    trackEvent('category_filtered', { category_id: categoryId || 'all' })
+}

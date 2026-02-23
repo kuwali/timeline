@@ -12,7 +12,14 @@ import { useTheme } from './hooks/useTheme'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { downloadICS } from './utils/calendarSync'
 import { exportBackup, importBackup } from './utils/dataBackup'
-import { trackThemeChange, trackSortModeChange, trackDataImported, trackDataExported } from './utils/analytics'
+import {
+    trackThemeChange,
+    trackSortModeChange,
+    trackDataImported,
+    trackDataExported,
+    trackEventOpened,
+    trackCategoryFiltered
+} from './utils/analytics'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
@@ -183,7 +190,10 @@ export function App() {
                     categories={categories}
                     usedCategoryIds={usedCategoryIds}
                     activeFilter={filterCategory}
-                    onFilter={setFilterCategory}
+                    onFilter={(catId) => {
+                        setFilterCategory(catId)
+                        trackCategoryFiltered(catId)
+                    }}
                 />
             </header>
 
@@ -194,7 +204,10 @@ export function App() {
                     loading={loading}
                     sortMode={sortMode}
                     filterCategory={filterCategory}
-                    onEventClick={setDetailEvent}
+                    onEventClick={(evt) => {
+                        setDetailEvent(evt)
+                        trackEventOpened(evt.categoryId)
+                    }}
                     onMoveUp={id => reorderEvent(id, 'up')}
                     onMoveDown={id => reorderEvent(id, 'down')}
                 />

@@ -3,7 +3,7 @@ import type { TimelineEvent } from '../types/TimelineEvent'
 import type { Category } from '../types/Category'
 
 const DB_NAME = 'timeline-db'
-const DB_VERSION = 2
+const DB_VERSION = 3
 const EVENTS_STORE = 'events'
 const CATEGORIES_STORE = 'categories'
 
@@ -73,6 +73,12 @@ async function getDB(): Promise<IDBPDatabase<TimelineDB>> {
         }
         if ('icon' in raw) {
             delete raw.icon
+            needsUpdate = true
+        }
+
+        // v3 → add isAllDay to all existing events
+        if (Object.keys(raw).length > 0 && typeof raw.isAllDay === 'undefined') {
+            raw.isAllDay = true
             needsUpdate = true
         }
 

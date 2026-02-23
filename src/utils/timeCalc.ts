@@ -77,6 +77,79 @@ export function formatDuration(from: Date, to: Date, format: string): string {
         .replace('DD', String(dur.days))
 }
 
+// ── Detailed View Tools ─────────────────────────────────────────
+
+export type DetailedCountdown = {
+    years: number
+    months: number
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+}
+
+/**
+ * Returns exact years, months, days, hours, mins, secs between two dates.
+ * Used for the live ticker in EventDetailModal.
+ */
+export function getDetailedCountdown(target: Date, now: Date): DetailedCountdown {
+    let t1 = now.getTime()
+    let t2 = target.getTime()
+
+    if (t1 > t2) {
+        const temp = t1
+        t1 = t2
+        t2 = temp
+    }
+
+    const d1 = new Date(t1)
+    const d2 = new Date(t2)
+
+    let years = d2.getFullYear() - d1.getFullYear()
+    let months = d2.getMonth() - d1.getMonth()
+    let days = d2.getDate() - d1.getDate()
+    let hours = d2.getHours() - d1.getHours()
+    let minutes = d2.getMinutes() - d1.getMinutes()
+    let seconds = d2.getSeconds() - d1.getSeconds()
+
+    if (seconds < 0) {
+        seconds += 60
+        minutes -= 1
+    }
+    if (minutes < 0) {
+        minutes += 60
+        hours -= 1
+    }
+    if (hours < 0) {
+        hours += 24
+        days -= 1
+    }
+    if (days < 0) {
+        months -= 1
+        const prevMonth = new Date(d2.getFullYear(), d2.getMonth(), 0)
+        days += prevMonth.getDate()
+    }
+    if (months < 0) {
+        years -= 1
+        months += 12
+    }
+
+    return { years, months, days, hours, minutes, seconds }
+}
+
+export function formatDateDetailed(date: Date, isAllDay: boolean): string {
+    const opts: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }
+    if (!isAllDay) {
+        opts.hour = 'numeric'
+        opts.minute = '2-digit'
+    }
+    return date.toLocaleString(undefined, opts)
+}
+
 /**
  * Given an anchor date and a recurrence rule, returns the next upcoming
  * occurrence on or after today.

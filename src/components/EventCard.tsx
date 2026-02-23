@@ -9,8 +9,7 @@ interface EventCardProps {
     isFirst: boolean
     isLast: boolean
     sortMode: SortMode
-    onEdit: (event: TimelineEvent) => void
-    onDelete: (id: string) => void
+    onClick: (event: TimelineEvent) => void
     onMoveUp: (id: string) => void
     onMoveDown: (id: string) => void
 }
@@ -21,8 +20,7 @@ export function EventCard({
     isFirst,
     isLast,
     sortMode,
-    onEdit,
-    onDelete,
+    onClick,
     onMoveUp,
     onMoveDown,
 }: EventCardProps) {
@@ -81,7 +79,10 @@ export function EventCard({
     })
 
     return (
-        <article className={`event-card ${isToday ? 'event-card--today' : ''} ${isPast ? 'event-card--past' : ''}`}>
+        <article
+            className={`event-card ${isToday ? 'event-card--today' : ''} ${isPast ? 'event-card--past' : ''}`}
+            onClick={() => onClick(event)}
+        >
             {/* Timeline node */}
             <div className="event-card__node">
                 <div className="event-card__dot" style={{ background: catColor, boxShadow: `0 0 8px ${catColor}40` }} />
@@ -98,12 +99,10 @@ export function EventCard({
                     <div className="event-card__actions">
                         {sortMode === 'manual' && (
                             <>
-                                <button className="icon-btn" onClick={() => onMoveUp(event.id)} disabled={isFirst} aria-label="Move up" title="Move up">↑</button>
-                                <button className="icon-btn" onClick={() => onMoveDown(event.id)} disabled={isLast} aria-label="Move down" title="Move down">↓</button>
+                                <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onMoveUp(event.id) }} disabled={isFirst} aria-label="Move up" title="Move up">↑</button>
+                                <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onMoveDown(event.id) }} disabled={isLast} aria-label="Move down" title="Move down">↓</button>
                             </>
                         )}
-                        <button className="icon-btn" onClick={() => onEdit(event)} aria-label="Edit event" title="Edit">✏️</button>
-                        <button className="icon-btn icon-btn--danger" onClick={() => onDelete(event.id)} aria-label="Delete event" title="Delete">🗑</button>
                     </div>
                 </div>
 

@@ -5,7 +5,9 @@ export type RecurrenceRule = {
 export type TimelineEvent = {
     id: string
     title: string
-    anchorDate: string // ISO date string — NEVER store computed values
+    anchorDate: string // ISO date string. If isAllDay=false, this includes specific time.
+    endDate?: string   // ISO date string for ranges. Optional.
+    isAllDay?: boolean // True by default for backwards compatibility
     recurrenceRule?: RecurrenceRule
     categoryId?: string // references Category.id
     sortOrder: number

@@ -3,7 +3,6 @@ import type { TimelineEvent } from '../types/TimelineEvent'
 import type { Category } from '../types/Category'
 import type { SortMode } from '../hooks/useEvents'
 import { EventCard } from './EventCard'
-import { SwipeableCard } from './SwipeableCard'
 import { TimelineDivider } from './TimelineDivider'
 import { isInPast, getNextOccurrence } from '../utils/timeCalc'
 
@@ -13,8 +12,7 @@ interface TimelineViewProps {
     loading: boolean
     sortMode: SortMode
     filterCategory: string | null
-    onEdit: (event: TimelineEvent) => void
-    onDelete: (id: string) => void
+    onEventClick: (event: TimelineEvent) => void
     onMoveUp: (id: string) => void
     onMoveDown: (id: string) => void
 }
@@ -33,7 +31,7 @@ function getEffectiveDate(event: TimelineEvent): Date {
     return date
 }
 
-export function TimelineView({ events, categories, loading, sortMode, filterCategory, onEdit, onDelete, onMoveUp, onMoveDown }: TimelineViewProps) {
+export function TimelineView({ events, categories, loading, sortMode, filterCategory, onEventClick, onMoveUp, onMoveDown }: TimelineViewProps) {
     const catMap = useMemo(() => getCategoryMap(categories), [categories])
 
     const filteredEvents = useMemo(() => {
@@ -124,22 +122,16 @@ export function TimelineView({ events, categories, loading, sortMode, filterCate
                     const event = item.event
                     return (
                         <li key={event.id} className="timeline__event-item">
-                            <SwipeableCard
-                                onSwipeRight={() => onEdit(event)}
-                                onSwipeLeft={() => onDelete(event.id)}
-                            >
-                                <EventCard
-                                    event={event}
-                                    category={catMap.get(event.categoryId ?? 'other')}
-                                    isFirst={i === 0}
-                                    isLast={i === timelineItems.length - 1}
-                                    sortMode={sortMode}
-                                    onEdit={onEdit}
-                                    onDelete={onDelete}
-                                    onMoveUp={onMoveUp}
-                                    onMoveDown={onMoveDown}
-                                />
-                            </SwipeableCard>
+                            <EventCard
+                                event={event}
+                                category={catMap.get(event.categoryId ?? 'other')}
+                                isFirst={i === 0}
+                                isLast={i === timelineItems.length - 1}
+                                sortMode={sortMode}
+                                onClick={onEventClick}
+                                onMoveUp={onMoveUp}
+                                onMoveDown={onMoveDown}
+                            />
                         </li>
                     )
                 })}

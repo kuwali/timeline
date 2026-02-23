@@ -6,8 +6,13 @@ import { EventForm } from './components/EventForm'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { CategoryFilter } from './components/CategoryFilter'
 import { CategoryManager } from './components/CategoryManager'
+import { EventDetailModal } from './components/EventDetailModal'
+import { useTheme } from './hooks/useTheme'
+import { generateICS, downloadICS } from './utils/calendarSync'
 
 export function App() {
+    const { theme, toggleTheme } = useTheme()
+
     const {
         events, categories, loading,
         sortMode, setSortMode,
@@ -21,6 +26,7 @@ export function App() {
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
     const [catManagerOpen, setCatManagerOpen] = useState(false)
     const [filterCategory, setFilterCategory] = useState<string | null>(null)
+    const [detailEvent, setDetailEvent] = useState<TimelineEvent | null>(null)
 
     // Compute which categories are in use
     const usedCategoryIds = useMemo(() => {
@@ -77,6 +83,14 @@ export function App() {
                     <div className="app-header__controls">
                         <button
                             className="btn btn--ghost btn--sm btn--icon"
+                            onClick={toggleTheme}
+                            aria-label={`Toggle theme (current: ${theme})`}
+                            title="Toggle Theme"
+                        >
+                            {theme === 'dark' ? '☀️' : '🌙'}
+                        </button>
+                        <button
+                            className="btn btn--ghost btn--sm btn--icon"
                             onClick={() => setCatManagerOpen(true)}
                             aria-label="Manage categories"
                             title="Categories"
@@ -116,8 +130,7 @@ export function App() {
                     loading={loading}
                     sortMode={sortMode}
                     filterCategory={filterCategory}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteRequest}
+                    onEventClick={setDetailEvent}
                     onMoveUp={id => reorderEvent(id, 'up')}
                     onMoveDown={id => reorderEvent(id, 'down')}
                 />
@@ -140,6 +153,16 @@ export function App() {
                 onEdit={editCategory}
                 onDelete={removeCategory}
                 onClose={() => setCatManagerOpen(false)}
+            />
+
+            <EventDetailModal
+                event={detailEvent}
+                category={categories.find(c => c.id === detailEvent?.categoryId)}
+                isOpen={!!detailEvent}
+                onClose={() => setDetailEvent(null)}
+                onEdit={handleEdit}
+                onDelete={handleDeleteRequest}
+                onExport={(evt) => downloadICS(evt)}
             />
 
             <ConfirmDialog

@@ -19,15 +19,19 @@ interface EventFormProps {
     onManageCategories: () => void
 }
 
-function todayISO(): string {
-    return new Date().toISOString().split('T')[0]
+function todayWithTimeISO(): string {
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    return new Date(Date.now() - tzOffset).toISOString().slice(0, 16)
 }
 
 export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, onClose, onManageCategories }: EventFormProps) {
     const isEditing = initialEvent != null
 
     const [title, setTitle] = useState('')
-    const [anchorDate, setAnchorDate] = useState(todayISO())
+    const [isAllDay, setIsAllDay] = useState(true)
+    const [anchorDate, setAnchorDate] = useState(todayWithTimeISO().split('T')[0])
+    const [hasEndDate, setHasEndDate] = useState(false)
+    const [endDate, setEndDate] = useState(todayWithTimeISO().split('T')[0])
     const [categoryId, setCategoryId] = useState<string>('other')
     const [recurrenceType, setRecurrenceType] = useState<RecurrenceRule['type'] | ''>('')
     const [formatPreset, setFormatPreset] = useState('')
@@ -36,7 +40,20 @@ export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, 
     useEffect(() => {
         if (initialEvent) {
             setTitle(initialEvent.title)
-            setAnchorDate(initialEvent.anchorDate.split('T')[0])
+            setIsAllDay(initialEvent.isAllDay !== false)
+
+            // Format for standard <input type="datetime-local"> or <input type="date">
+            const d = initialEvent.anchorDate
+            setAnchorDate(initialEvent.isAllDay === false ? d.slice(0, 16) : d.split('T')[0])
+
+            if (initialEvent.endDate) {
+                setHasEndDate(true)
+                setEndDate(initialEvent.isAllDay === false ? initialEvent.endDate.slice(0, 16) : initialEvent.endDate.split('T')[0])
+            } else {
+                setHasEndDate(false)
+                setEndDate(todayWithTimeISO().split('T')[0])
+            }
+
             setCategoryId(initialEvent.categoryId ?? 'other')
             setRecurrenceType(initialEvent.recurrenceRule?.type ?? '')
 
@@ -55,7 +72,10 @@ export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, 
             }
         } else {
             setTitle('')
-            setAnchorDate(todayISO())
+            setIsAllDay(true)
+            setAnchorDate(todayWithTimeISO().split('T')[0])
+            setHasEndDate(false)
+            setEndDate(todayWithTimeISO().split('T')[0])
             setCategoryId('other')
             setRecurrenceType('')
             setFormatPreset('')
@@ -63,15 +83,29 @@ export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, 
         }
     }, [initialEvent, isOpen])
 
+    // Keep endDate in sync format-wise when flipping isAllDay
+    useEffect(() => {
+        if (!isOpen) return
+        const len = isAllDay ? 10 : 16
+        setAnchorDate(prev => prev.slice(0, len))
+        setEndDate(prev => prev.slice(0, len))
+    }, [isAllDay, isOpen])
+
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         if (!title.trim() || !anchorDate) return
 
         const displayFormat = formatPreset === '__custom__' ? customFormat.trim() : formatPreset
 
+        // Ensure anchorDate is formatted optimally
+        const finalStartDate = isAllDay ? anchorDate : new Date(anchorDate).toISOString()
+        const finalEndDate = hasEndDate ? (isAllDay ? endDate : new Date(endDate).toISOString()) : undefined
+
         const draft: Omit<TimelineEvent, 'id' | 'sortOrder'> = {
             title: title.trim(),
-            anchorDate,
+            anchorDate: finalStartDate,
+            endDate: finalEndDate,
+            isAllDay,
             categoryId,
             recurrenceRule: recurrenceType ? { type: recurrenceType } : undefined,
             displayFormat: displayFormat || undefined,
@@ -118,18 +152,51 @@ export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, 
                         />
                     </div>
 
-                    {/* Date */}
+                    {/* Date and Time */}
                     <div className="form-group">
-                        <label htmlFor="event-date" className="form-label">Date *</label>
+                        <div className="form-label-row">
+                            <label htmlFor="event-date" className="form-label">Date *</label>
+                            <label className="form-checkbox">
+                                <input
+                                    type="checkbox"
+                                    checked={isAllDay}
+                                    onChange={e => setIsAllDay(e.target.checked)}
+                                />
+                                All day
+                            </label>
+                        </div>
                         <input
                             id="event-date"
                             className="form-input"
-                            type="date"
+                            type={isAllDay ? 'date' : 'datetime-local'}
                             value={anchorDate}
                             onChange={e => setAnchorDate(e.target.value)}
                             required
                         />
-                        <span className="form-hint">Past dates → "days ago" · Future dates → "days until"</span>
+
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <label className="form-checkbox" style={{ fontSize: '0.85rem' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={hasEndDate}
+                                    onChange={e => setHasEndDate(e.target.checked)}
+                                />
+                                Add end date
+                            </label>
+                            {hasEndDate && (
+                                <input
+                                    style={{ marginTop: '0.5rem' }}
+                                    className="form-input"
+                                    type={isAllDay ? 'date' : 'datetime-local'}
+                                    value={endDate}
+                                    onChange={e => setEndDate(e.target.value)}
+                                    required
+                                />
+                            )}
+                        </div>
+                        <span className="form-hint" style={{ marginTop: '0.25rem' }}>
+                            Past dates → "days ago" · Future dates → "days until"
+                        </span>
                     </div>
 
                     {/* Category */}

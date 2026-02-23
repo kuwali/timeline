@@ -55,6 +55,23 @@
   --timeline-dot-size: 12px;
 }
 
+/* ── Light Mode Tokens ──────────────────────────────────────────── */
+.theme-light {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-soft: #cbd5e1;
+
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-text-soft: #64748b;
+
+  --color-primary: #3b82f6;
+  --color-primary-glow: #3b82f630;
+  --color-today-glow: #3b82f640;
+}
+
 /* ── Reset ──────────────────────────────────────────────────────── */
 *,
 *::before,
@@ -62,6 +79,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  /* Prevent mobile horizontal scrolling */
 }
 
 html {
@@ -149,6 +172,7 @@ ul {
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--color-text);
+  margin-right: auto;
 }
 
 .app-header__controls {
@@ -429,6 +453,8 @@ ul {
   border: 1px solid var(--color-border);
   overflow: hidden;
   transition: border-color var(--transition-med), box-shadow var(--transition-med), transform var(--transition-fast);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .event-card:hover {
@@ -474,10 +500,12 @@ ul {
 
 .event-card__body {
   flex: 1;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  /* More compact padding */
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  /* Tighter gap */
   min-width: 0;
 }
 
@@ -533,11 +561,13 @@ ul {
 }
 
 .event-card__category {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
+  /* Slightly smaller */
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  padding: 2px 8px;
+  padding: 2px 6px;
+  /* Tighter padding */
   border-radius: 100px;
   border: 1px solid;
   opacity: 0.9;
@@ -563,7 +593,8 @@ ul {
 }
 
 .event-card__day-number {
-  font-size: 2.8rem;
+  font-size: 2.2rem;
+  /* Reduced from 2.8rem */
   font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--color-text);
@@ -576,7 +607,8 @@ ul {
 }
 
 .event-card__day-duration {
-  font-size: 1.6rem;
+  font-size: 1.2rem;
+  /* Reduced from 1.6rem */
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-text);
@@ -847,6 +879,142 @@ ul {
 .color-picker__btn--selected {
   border-color: var(--color-text);
   transform: scale(1.15);
+}
+
+/* ── Event Detail Modal ─────────────────────────────────────────── */
+.detail-modal {
+  padding: 0;
+  overflow: hidden;
+}
+
+.detail-modal__header {
+  position: relative;
+  height: 120px;
+  background: var(--color-surface-2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.detail-modal__header .icon-btn {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+.detail-modal__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transform: translateY(30%);
+}
+
+.detail-modal__body {
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  text-align: center;
+}
+
+.detail-modal__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-3);
+}
+
+.detail-modal__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.detail-modal__category {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid;
+}
+
+.detail-modal__date {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* Detailed Countdown Ticker */
+.detail-modal__countdown-box {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+}
+
+.detail-modal__countdown-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+.detail-modal__countdown {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.countdown-val {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.countdown-lbl {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: var(--space-2);
+}
+
+.detail-modal__actions {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-surface-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-modal__actions-right {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.detail-modal__btn {
+  font-size: 0.85rem;
+  padding: var(--space-2) var(--space-4);
 }
 
 /* ── Form Elements ──────────────────────────────────────────────── */

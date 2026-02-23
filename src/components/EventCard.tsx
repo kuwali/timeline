@@ -24,21 +24,44 @@ export function EventCard({
     onMoveUp,
     onMoveDown,
 }: EventCardProps) {
-    // Derive the effective date — for recurring events, use next occurrence
-    let effectiveDate = new Date(event.anchorDate)
+    const now = new Date()
+    const startDate = new Date(event.anchorDate)
+    const endDate = event.endDate ? new Date(event.endDate) : null
+
+    // For recurring events, use next occurrence of the start
+    let effectiveStart = startDate
     if (event.recurrenceRule) {
-        effectiveDate = getNextOccurrence(effectiveDate, event.recurrenceRule)
+        effectiveStart = getNextOccurrence(startDate, event.recurrenceRule)
     }
 
-    // Auto-detect direction from date
+    // Smart date selection for range events:
+    // - Future (start is ahead)  → count down to start date
+    // - Ongoing (start past, end future) → show "Happening now"
+    // - Past (end is past, or no end and start is past) → count up from end date (or start if no end)
+    const startIsPast = isInPast(effectiveStart)
+    const endIsPast = endDate ? isInPast(endDate) : startIsPast
+    const isOngoing = endDate && startIsPast && !endIsPast
+
+    // Choose the effective date for the countdown
+    let effectiveDate: Date
+    if (isOngoing) {
+        effectiveDate = now // "today" — ongoing
+    } else if (!startIsPast) {
+        effectiveDate = effectiveStart // future → count to start
+    } else if (endDate && endIsPast) {
+        effectiveDate = endDate // past range → count from end
+    } else {
+        effectiveDate = effectiveStart // single past event
+    }
+
     const isPast = isInPast(effectiveDate)
     const dayCount = isPast
         ? calculateDaysSince(effectiveDate)
         : calculateDaysUntil(effectiveDate)
 
-    const isToday = dayCount === 0
-    const isTomorrow = !isPast && dayCount === 1
-    const isYesterday = isPast && dayCount === 1
+    const isToday = dayCount === 0 || isOngoing
+    const isTomorrow = !isPast && !isOngoing && dayCount === 1
+    const isYesterday = isPast && !isOngoing && dayCount === 1
 
     const catColor = category?.color ?? '#6b7fa3'
     const catIcon = category?.icon ?? '📌'
@@ -46,6 +69,7 @@ export function EventCard({
 
     // Build counter display
     function renderCounter() {
+        if (isOngoing) return <span className="event-card__day-label-only" style={{ color: 'var(--color-accent)' }}>Happening now</span>
         if (isToday) return <span className="event-card__day-label-only">Today</span>
         if (isTomorrow) return <span className="event-card__day-label-only">Tomorrow</span>
         if (isYesterday) return <span className="event-card__day-label-only">Yesterday</span>
@@ -71,8 +95,9 @@ export function EventCard({
         )
     }
 
-    // Formatted date for meta row
-    const formattedDate = effectiveDate.toLocaleDateString('en-US', {
+    // Formatted date for meta row — show start or end depending on context
+    const displayDate = isOngoing ? effectiveStart : effectiveDate
+    const formattedDate = displayDate.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',

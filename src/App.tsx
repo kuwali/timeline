@@ -133,10 +133,6 @@ export function App() {
             <header className={`app-header ${headerHidden ? 'app-header--hidden' : ''}`}>
                 <div className="app-header__inner">
                     <div className="app-header__brand">
-                        <span className="app-header__logo" aria-hidden>⏳</span>
-                        <h1 className="app-header__title">Timeline</h1>
-                    </div>
-                    <div className="app-header__controls">
                         <SettingsMenu
                             theme={theme}
                             sortMode={sortMode}
@@ -150,6 +146,10 @@ export function App() {
                             onManageCategories={() => setCatManagerOpen(true)}
                             onCheckForUpdates={handleCheckForUpdates}
                         />
+                        <span className="app-header__logo" aria-hidden>⏳</span>
+                        <h1 className="app-header__title">Timeline</h1>
+                    </div>
+                    <div className="app-header__controls">
                         <button
                             className="btn btn--primary"
                             onClick={handleAdd}

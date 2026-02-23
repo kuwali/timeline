@@ -156,14 +156,17 @@ export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, 
                     <div className="form-group">
                         <div className="form-label-row">
                             <label htmlFor="event-date" className="form-label">Date *</label>
-                            <label className="form-checkbox">
-                                <input
-                                    type="checkbox"
-                                    checked={isAllDay}
-                                    onChange={e => setIsAllDay(e.target.checked)}
-                                />
-                                All day
-                            </label>
+                            <button
+                                type="button"
+                                className={`toggle-switch ${isAllDay ? 'toggle-switch--on' : ''}`}
+                                onClick={() => setIsAllDay(!isAllDay)}
+                                role="switch"
+                                aria-checked={isAllDay}
+                                aria-label="All day event"
+                            >
+                                <span className="toggle-switch__thumb" />
+                                <span className="toggle-switch__label">{isAllDay ? 'All day' : 'Specific time'}</span>
+                            </button>
                         </div>
                         <input
                             id="event-date"
@@ -174,27 +177,30 @@ export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, 
                             required
                         />
 
-                        <div style={{ marginTop: '0.5rem' }}>
-                            <label className="form-checkbox" style={{ fontSize: '0.85rem' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={hasEndDate}
-                                    onChange={e => setHasEndDate(e.target.checked)}
-                                />
-                                Add end date
-                            </label>
-                            {hasEndDate && (
-                                <input
-                                    style={{ marginTop: '0.5rem' }}
-                                    className="form-input"
-                                    type={isAllDay ? 'date' : 'datetime-local'}
-                                    value={endDate}
-                                    onChange={e => setEndDate(e.target.value)}
-                                    required
-                                />
-                            )}
+                        <div className="form-label-row" style={{ marginTop: 'var(--space-3)' }}>
+                            <span className="form-label" style={{ margin: 0 }}>End Date</span>
+                            <button
+                                type="button"
+                                className={`toggle-switch ${hasEndDate ? 'toggle-switch--on' : ''}`}
+                                onClick={() => setHasEndDate(!hasEndDate)}
+                                role="switch"
+                                aria-checked={hasEndDate}
+                                aria-label="Has end date"
+                            >
+                                <span className="toggle-switch__thumb" />
+                                <span className="toggle-switch__label">{hasEndDate ? 'On' : 'Off'}</span>
+                            </button>
                         </div>
-                        <span className="form-hint" style={{ marginTop: '0.25rem' }}>
+                        {hasEndDate && (
+                            <input
+                                className="form-input"
+                                type={isAllDay ? 'date' : 'datetime-local'}
+                                value={endDate}
+                                onChange={e => setEndDate(e.target.value)}
+                                required
+                            />
+                        )}
+                        <span className="form-hint">
                             Past dates → "days ago" · Future dates → "days until"
                         </span>
                     </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import type { TimelineEvent } from './types/TimelineEvent'
 import { useEvents } from './hooks/useEvents'
 import { TimelineView } from './components/TimelineView'
@@ -8,7 +8,8 @@ import { CategoryFilter } from './components/CategoryFilter'
 import { CategoryManager } from './components/CategoryManager'
 import { EventDetailModal } from './components/EventDetailModal'
 import { useTheme } from './hooks/useTheme'
-import { generateICS, downloadICS } from './utils/calendarSync'
+import { downloadICS } from './utils/calendarSync'
+import { exportBackup, importBackup } from './utils/dataBackup'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
@@ -27,6 +28,7 @@ export function App() {
     const [catManagerOpen, setCatManagerOpen] = useState(false)
     const [filterCategory, setFilterCategory] = useState<string | null>(null)
     const [detailEvent, setDetailEvent] = useState<TimelineEvent | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Compute which categories are in use
     const usedCategoryIds = useMemo(() => {
@@ -72,8 +74,30 @@ export function App() {
         setSortMode(sortMode === 'auto' ? 'manual' : 'auto')
     }
 
+    async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        try {
+            const result = await importBackup(file)
+            alert(`Imported ${result.events} events and ${result.categories} categories. Refresh to see changes.`)
+            window.location.reload()
+        } catch (err) {
+            alert('Import failed: ' + (err instanceof Error ? err.message : 'Unknown error'))
+        }
+        e.target.value = '' // reset for re-import
+    }
+
     return (
         <div className="app">
+            {/* Hidden file input for import */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                style={{ display: 'none' }}
+                onChange={handleImportFile}
+            />
+
             <header className="app-header">
                 <div className="app-header__inner">
                     <div className="app-header__brand">
@@ -88,6 +112,22 @@ export function App() {
                             title="Toggle Theme"
                         >
                             {theme === 'dark' ? '☀️' : '🌙'}
+                        </button>
+                        <button
+                            className="btn btn--ghost btn--sm btn--icon"
+                            onClick={exportBackup}
+                            aria-label="Export backup"
+                            title="Export Data"
+                        >
+                            📤
+                        </button>
+                        <button
+                            className="btn btn--ghost btn--sm btn--icon"
+                            onClick={() => fileInputRef.current?.click()}
+                            aria-label="Import backup"
+                            title="Import Data"
+                        >
+                            📥
                         </button>
                         <button
                             className="btn btn--ghost btn--sm btn--icon"

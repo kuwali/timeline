@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import type { TimelineEvent } from './types/TimelineEvent'
 import { useEvents } from './hooks/useEvents'
 import { TimelineView } from './components/TimelineView'
@@ -15,7 +15,7 @@ import { exportBackup, importBackup } from './utils/dataBackup'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
-    const { showUpdate, updateAvailable, applyUpdate, dismissUpdate } = useServiceWorker()
+    const { showUpdate, updateAvailable, checking, applyUpdate, dismissUpdate, checkForUpdate } = useServiceWorker()
 
     const {
         events, categories, loading,
@@ -94,11 +94,30 @@ export function App() {
         if (updateAvailable) {
             applyUpdate()
         } else {
-            // Manually trigger SW update check
-            navigator.serviceWorker?.getRegistration().then(reg => reg?.update())
-            alert('Checking for updates…')
+            checkForUpdate()
         }
     }
+
+    // Auto-hide header on scroll down, show on scroll up or idle
+    const [headerHidden, setHeaderHidden] = useState(false)
+    const lastScrollY = useRef(0)
+    const idleTimer = useRef<ReturnType<typeof setTimeout>>()
+
+    const handleScroll = useCallback(() => {
+        const currentY = window.scrollY
+        const goingDown = currentY > lastScrollY.current && currentY > 80
+        setHeaderHidden(goingDown)
+        lastScrollY.current = currentY
+
+        // Show header after 1s idle
+        clearTimeout(idleTimer.current)
+        idleTimer.current = setTimeout(() => setHeaderHidden(false), 1000)
+    }, [])
+
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [handleScroll])
 
     return (
         <div className="app">
@@ -111,7 +130,7 @@ export function App() {
                 onChange={handleImportFile}
             />
 
-            <header className="app-header">
+            <header className={`app-header ${headerHidden ? 'app-header--hidden' : ''}`}>
                 <div className="app-header__inner">
                     <div className="app-header__brand">
                         <span className="app-header__logo" aria-hidden>⏳</span>
@@ -122,6 +141,7 @@ export function App() {
                             theme={theme}
                             sortMode={sortMode}
                             updateAvailable={updateAvailable}
+                            checking={checking}
                             categories={categories}
                             onToggleTheme={toggleTheme}
                             onToggleSortMode={toggleSortMode}

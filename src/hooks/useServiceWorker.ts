@@ -1,15 +1,18 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 export function useServiceWorker() {
     const [showUpdate, setShowUpdate] = useState(false)
     const [updateAvailable, setUpdateAvailable] = useState(false)
+    const [checking, setChecking] = useState(false)
+    const registrationRef = useRef<ServiceWorkerRegistration | undefined>()
 
     const {
         needRefresh: [needRefresh],
         updateServiceWorker,
     } = useRegisterSW({
         onRegisteredSW(_swUrl: string, registration: ServiceWorkerRegistration | undefined) {
+            registrationRef.current = registration
             // Check for updates every 60 seconds
             if (registration) {
                 setInterval(() => {
@@ -57,5 +60,20 @@ export function useServiceWorker() {
         // updateAvailable stays true so settings menu can still trigger it
     }
 
-    return { showUpdate, updateAvailable, applyUpdate, dismissUpdate }
+    // Manual check for updates
+    const checkForUpdate = useCallback(async () => {
+        setChecking(true)
+        try {
+            await registrationRef.current?.update()
+            // After update check, wait a moment for needRefresh to trigger
+            await new Promise(r => setTimeout(r, 1500))
+            if (!needRefresh) {
+                setChecking(false)
+            }
+        } catch {
+            setChecking(false)
+        }
+    }, [needRefresh])
+
+    return { showUpdate, updateAvailable, checking, applyUpdate, dismissUpdate, checkForUpdate }
 }

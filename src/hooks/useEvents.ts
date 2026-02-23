@@ -78,8 +78,8 @@ export function useEvents() {
                         future.push({ event: e, time })
                     }
                 }
-                // Past: most recent first (descending)
-                past.sort((a, b) => b.time - a.time)
+                // Past: oldest first (ascending) — newest appears near TODAY
+                past.sort((a, b) => a.time - b.time)
                 // Future: nearest first (ascending)
                 future.sort((a, b) => a.time - b.time)
                 return [...past.map(p => p.event), ...future.map(f => f.event)]

@@ -5,6 +5,7 @@ interface SettingsMenuProps {
     theme: string
     sortMode: string
     updateAvailable: boolean
+    checking: boolean
     onToggleTheme: () => void
     onToggleSortMode: () => void
     onExport: () => void
@@ -18,6 +19,7 @@ export function SettingsMenu({
     theme,
     sortMode,
     updateAvailable,
+    checking,
     onToggleTheme,
     onToggleSortMode,
     onExport,
@@ -103,9 +105,16 @@ export function SettingsMenu({
                         <button
                             className={`settings-menu__item ${updateAvailable ? 'settings-menu__item--highlight' : ''}`}
                             onClick={() => { onCheckForUpdates(); setIsOpen(false) }}
+                            disabled={checking}
                         >
-                            <span className="settings-menu__icon">🔄</span>
-                            <span>{updateAvailable ? 'Update Available — Install Now' : 'Check for Updates'}</span>
+                            <span className="settings-menu__icon">{checking ? '⏳' : '🔄'}</span>
+                            <span>
+                                {checking
+                                    ? 'Checking…'
+                                    : updateAvailable
+                                        ? 'Update Available — Install Now'
+                                        : 'Check for Updates'}
+                            </span>
                         </button>
                     </div>
 

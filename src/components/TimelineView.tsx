@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import type { TimelineEvent } from '../types/TimelineEvent'
 import type { Category } from '../types/Category'
 import type { SortMode } from '../hooks/useEvents'
@@ -33,6 +33,8 @@ function getEffectiveDate(event: TimelineEvent): Date {
 
 export function TimelineView({ events, categories, loading, sortMode, filterCategory, onEventClick, onMoveUp, onMoveDown }: TimelineViewProps) {
     const catMap = useMemo(() => getCategoryMap(categories), [categories])
+    const todayRef = useRef<HTMLLIElement>(null)
+    const hasScrolled = useRef(false)
 
     const filteredEvents = useMemo(() => {
         if (!filterCategory) return events
@@ -77,6 +79,17 @@ export function TimelineView({ events, categories, loading, sortMode, filterCate
         return items
     }, [filteredEvents, sortMode])
 
+    // Scroll to TODAY marker on first load
+    useEffect(() => {
+        if (!loading && !hasScrolled.current && todayRef.current) {
+            hasScrolled.current = true
+            // Short delay to ensure DOM is rendered
+            setTimeout(() => {
+                todayRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }, 300)
+        }
+    }, [loading, timelineItems])
+
     if (loading) {
         return (
             <div className="state-container">
@@ -112,8 +125,13 @@ export function TimelineView({ events, categories, loading, sortMode, filterCate
             <ol className="timeline__list">
                 {timelineItems.map((item, i) => {
                     if (item.type === 'divider') {
+                        const isTodayMarker = item.variant === 'today'
                         return (
-                            <li key={`div-${i}`} className="timeline__divider-item">
+                            <li
+                                key={`div-${i}`}
+                                className="timeline__divider-item"
+                                ref={isTodayMarker ? todayRef : undefined}
+                            >
                                 <TimelineDivider label={item.label} variant={item.variant} />
                             </li>
                         )

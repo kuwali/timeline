@@ -33,11 +33,21 @@ export function useEvents() {
     const sortEvents = useCallback(
         (list: TimelineEvent[]): TimelineEvent[] => {
             if (sortMode === 'auto') {
-                return [...list].sort((a, b) => {
-                    const dateA = new Date(a.anchorDate).getTime()
-                    const dateB = new Date(b.anchorDate).getTime()
-                    return dateA - dateB
-                })
+                const now = Date.now()
+                const past: TimelineEvent[] = []
+                const future: TimelineEvent[] = []
+                for (const e of list) {
+                    if (new Date(e.anchorDate).getTime() <= now) {
+                        past.push(e)
+                    } else {
+                        future.push(e)
+                    }
+                }
+                // Past: most recent first (descending)
+                past.sort((a, b) => new Date(b.anchorDate).getTime() - new Date(a.anchorDate).getTime())
+                // Future: nearest first (ascending)
+                future.sort((a, b) => new Date(a.anchorDate).getTime() - new Date(b.anchorDate).getTime())
+                return [...past, ...future]
             }
             return [...list].sort((a, b) => a.sortOrder - b.sortOrder)
         },

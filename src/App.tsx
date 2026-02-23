@@ -100,24 +100,57 @@ export function App() {
 
     // Auto-hide header on scroll down, show on scroll up or idle
     const [headerHidden, setHeaderHidden] = useState(false)
+    const [todayDirection, setTodayDirection] = useState<'up' | 'down' | null>(null)
     const lastScrollY = useRef(0)
     const idleTimer = useRef<ReturnType<typeof setTimeout>>()
+    const scrollingDown = useRef(false)
 
     const handleScroll = useCallback(() => {
         const currentY = window.scrollY
-        const goingDown = currentY > lastScrollY.current && currentY > 80
-        setHeaderHidden(goingDown)
+        const delta = currentY - lastScrollY.current
+
+        // Only toggle header if scroll delta is significant (avoids jitter)
+        if (delta > 5 && currentY > 80) {
+            scrollingDown.current = true
+            setHeaderHidden(true)
+        } else if (delta < -5) {
+            scrollingDown.current = false
+            setHeaderHidden(false)
+        }
         lastScrollY.current = currentY
 
-        // Show header after 1s idle
+        // Show header after idle
         clearTimeout(idleTimer.current)
-        idleTimer.current = setTimeout(() => setHeaderHidden(false), 1000)
+        idleTimer.current = setTimeout(() => {
+            setHeaderHidden(false)
+        }, 800)
+
+        // Determine TODAY marker direction for FAB
+        const todayEl = document.querySelector('[data-today-marker]')
+        if (todayEl) {
+            const rect = todayEl.getBoundingClientRect()
+            const viewH = window.innerHeight
+            if (rect.top < -100) {
+                setTodayDirection('up')
+            } else if (rect.top > viewH + 100) {
+                setTodayDirection('down')
+            } else {
+                setTodayDirection(null) // TODAY is visible
+            }
+        }
     }, [])
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll, { passive: true })
+        // Initial check
+        handleScroll()
         return () => window.removeEventListener('scroll', handleScroll)
     }, [handleScroll])
+
+    function scrollToToday() {
+        const todayEl = document.querySelector('[data-today-marker]')
+        todayEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
 
     return (
         <div className="app">
@@ -230,6 +263,20 @@ export function App() {
                         <button className="btn btn--ghost btn--sm" onClick={dismissUpdate}>Later</button>
                     </div>
                 </div>
+            )}
+
+            {/* Scroll to TODAY FAB */}
+            {todayDirection && (
+                <button
+                    className={`scroll-today-fab scroll-today-fab--${todayDirection}`}
+                    onClick={scrollToToday}
+                    aria-label="Scroll to today"
+                >
+                    <span className="scroll-today-fab__arrow">
+                        {todayDirection === 'up' ? '↑' : '↓'}
+                    </span>
+                    <span className="scroll-today-fab__label">TODAY</span>
+                </button>
             )}
         </div>
     )

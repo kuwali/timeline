@@ -131,6 +131,7 @@ export function TimelineView({ events, categories, loading, sortMode, filterCate
                                 key={`div-${i}`}
                                 className="timeline__divider-item"
                                 ref={isTodayMarker ? todayRef : undefined}
+                                {...(isTodayMarker ? { 'data-today-marker': '' } : {})}
                             >
                                 <TimelineDivider label={item.label} variant={item.variant} />
                             </li>

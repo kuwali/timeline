@@ -36,13 +36,36 @@ export function useEvents() {
             if (sortMode === 'auto') {
                 const now = Date.now()
 
-                // Compute effective date for each event (handles recurring)
+                // Compute effective date mirroring EventCard logic:
+                // - Recurring: next occurrence
+                // - Range past: endDate (most recently ended first)
+                // - Range future: anchorDate (soonest start first)
+                // - Range ongoing: now (appears near today)
+                // - Single: anchorDate
                 function getEffective(e: TimelineEvent): number {
-                    let date = new Date(e.anchorDate)
+                    const start = new Date(e.anchorDate)
+
+                    // Recurring events: use next occurrence
                     if (e.recurrenceRule) {
-                        date = getNextOccurrence(date, e.recurrenceRule)
+                        return getNextOccurrence(start, e.recurrenceRule).getTime()
                     }
-                    return date.getTime()
+
+                    const end = e.endDate ? new Date(e.endDate) : null
+                    const startTime = start.getTime()
+                    const endTime = end ? end.getTime() : null
+
+                    // Ongoing range (start past, end future) → treat as now
+                    if (end && startTime <= now && endTime! > now) {
+                        return now
+                    }
+
+                    // Past range → use end date for sorting
+                    if (end && endTime! <= now) {
+                        return endTime!
+                    }
+
+                    // Everything else (single events, future ranges) → start date
+                    return startTime
                 }
 
                 const past: { event: TimelineEvent; time: number }[] = []

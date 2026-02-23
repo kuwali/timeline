@@ -12,6 +12,7 @@ import { useTheme } from './hooks/useTheme'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { downloadICS } from './utils/calendarSync'
 import { exportBackup, importBackup } from './utils/dataBackup'
+import { trackThemeChange, trackSortModeChange, trackDataImported, trackDataExported } from './utils/analytics'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
@@ -74,7 +75,9 @@ export function App() {
     }
 
     function toggleSortMode() {
-        setSortMode(sortMode === 'auto' ? 'manual' : 'auto')
+        const newMode = sortMode === 'auto' ? 'manual' : 'auto'
+        setSortMode(newMode)
+        trackSortModeChange(newMode)
     }
 
     async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -82,6 +85,7 @@ export function App() {
         if (!file) return
         try {
             const result = await importBackup(file)
+            trackDataImported()
             alert(`Imported ${result.events} events and ${result.categories} categories. Refresh to see changes.`)
             window.location.reload()
         } catch (err) {
@@ -147,9 +151,16 @@ export function App() {
                             updateAvailable={updateAvailable}
                             checking={checking}
                             categories={categories}
-                            onToggleTheme={toggleTheme}
+                            onToggleTheme={() => {
+                                const newTheme = theme === 'dark' ? 'light' : 'dark'
+                                toggleTheme()
+                                trackThemeChange(newTheme)
+                            }}
                             onToggleSortMode={toggleSortMode}
-                            onExport={exportBackup}
+                            onExport={() => {
+                                exportBackup()
+                                trackDataExported()
+                            }}
                             onImport={() => fileInputRef.current?.click()}
                             onManageCategories={() => setCatManagerOpen(true)}
                             onCheckForUpdates={handleCheckForUpdates}

@@ -8,6 +8,7 @@ import {
     updateCategory as updateCategoryDB,
     deleteCategory as deleteCategoryDB,
 } from '../db/db'
+import { trackEventCreated, trackEventEdited, trackEventDeleted } from '../utils/analytics'
 
 export type SortMode = 'auto' | 'manual'
 
@@ -123,14 +124,16 @@ export function useEvents() {
             }
             await addEvent(newEvent)
             setEvents(prev => sortEvents([...prev, newEvent]))
+            trackEventCreated(newEvent.categoryId, !!newEvent.recurrenceRule)
         },
         [events, sortEvents]
     )
 
     const editEvent = useCallback(
-        async (updated: TimelineEvent) => {
-            await updateEvent(updated)
-            setEvents(prev => sortEvents(prev.map(e => (e.id === updated.id ? updated : e))))
+        async (updatedEvent: TimelineEvent) => {
+            await updateEvent(updatedEvent)
+            setEvents(prev => sortEvents(prev.map(e => (e.id === updatedEvent.id ? updatedEvent : e))))
+            trackEventEdited(updatedEvent.categoryId)
         },
         [sortEvents]
     )
@@ -138,6 +141,7 @@ export function useEvents() {
     const removeEvent = useCallback(async (id: string) => {
         await deleteEvent(id)
         setEvents(prev => prev.filter(e => e.id !== id))
+        trackEventDeleted()
     }, [])
 
     const reorderEvent = useCallback(

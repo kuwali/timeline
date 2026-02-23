@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { TimelineEvent } from '../types/TimelineEvent'
-import { getAllEvents, addEvent, updateEvent, deleteEvent } from '../db/db'
+import type { Category } from '../types/Category'
+import {
+    getAllEvents, addEvent, updateEvent, deleteEvent,
+    getAllCategories, addCategory as addCategoryDB,
+    updateCategory as updateCategoryDB,
+    deleteCategory as deleteCategoryDB,
+} from '../db/db'
 
 export type SortMode = 'auto' | 'manual'
 
@@ -15,6 +21,7 @@ function getSavedSortMode(): SortMode {
 
 export function useEvents() {
     const [events, setEvents] = useState<TimelineEvent[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(true)
     const [sortMode, setSortModeState] = useState<SortMode>(getSavedSortMode)
 
@@ -23,7 +30,6 @@ export function useEvents() {
         localStorage.setItem('timeline-sort-mode', mode)
     }, [])
 
-    // Sort helper
     const sortEvents = useCallback(
         (list: TimelineEvent[]): TimelineEvent[] => {
             if (sortMode === 'auto') {
@@ -38,11 +44,20 @@ export function useEvents() {
         [sortMode]
     )
 
-    // Load all events from IndexedDB on mount
+    // Load events + categories on mount
     useEffect(() => {
-        getAllEvents()
-            .then(list => setEvents(sortEvents(list)))
-            .finally(() => setLoading(false))
+        async function loadData() {
+            try {
+                const [evts, cats] = await Promise.all([getAllEvents(), getAllCategories()])
+                setEvents(sortEvents(evts))
+                setCategories(cats)
+            } catch (err) {
+                console.error('[Timeline] Failed to load data:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadData()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
@@ -50,6 +65,8 @@ export function useEvents() {
     useEffect(() => {
         setEvents(prev => sortEvents(prev))
     }, [sortMode, sortEvents])
+
+    // ── Event CRUD ─────────────────────────────────────────────────
 
     const createEvent = useCallback(
         async (draft: Omit<TimelineEvent, 'id' | 'sortOrder'>) => {
@@ -97,5 +114,36 @@ export function useEvents() {
         [events]
     )
 
-    return { events, loading, sortMode, setSortMode, createEvent, editEvent, removeEvent, reorderEvent }
+    // ── Category CRUD ──────────────────────────────────────────────
+
+    const addCategory = useCallback(async (cat: Omit<Category, 'id'>) => {
+        const newCat: Category = { ...cat, id: generateId() }
+        await addCategoryDB(newCat)
+        setCategories(prev => [...prev, newCat])
+        return newCat
+    }, [])
+
+    const editCategory = useCallback(async (cat: Category) => {
+        await updateCategoryDB(cat)
+        setCategories(prev => prev.map(c => (c.id === cat.id ? cat : c)))
+    }, [])
+
+    const removeCategory = useCallback(async (id: string) => {
+        await deleteCategoryDB(id)
+        setCategories(prev => prev.filter(c => c.id !== id))
+        // Reassign events with this category to 'other'
+        const affected = events.filter(e => e.categoryId === id)
+        for (const evt of affected) {
+            const updated = { ...evt, categoryId: 'other' }
+            await updateEvent(updated)
+            setEvents(prev => prev.map(e => (e.id === evt.id ? updated : e)))
+        }
+    }, [events])
+
+    return {
+        events, categories, loading,
+        sortMode, setSortMode,
+        createEvent, editEvent, removeEvent, reorderEvent,
+        addCategory, editCategory, removeCategory,
+    }
 }

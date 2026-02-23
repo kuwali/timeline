@@ -6,11 +6,9 @@ export type TimelineEvent = {
     id: string
     title: string
     anchorDate: string // ISO date string — NEVER store computed values
-    direction: 'past' | 'future'
     recurrenceRule?: RecurrenceRule
-    category?: string
-    icon?: string
+    categoryId?: string // references Category.id
     sortOrder: number
-    displayFormat?: string // e.g. "DD MMM", "YYYY-MM-DD" — custom counter label
+    displayFormat?: string // duration format: "YY year MM month DD day" or empty for total days
     notificationConfig?: null // placeholder for Phase 4
 }

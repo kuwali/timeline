@@ -3,6 +3,13 @@ import type { RecurrenceRule } from '../types/TimelineEvent'
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
 /**
+ * Returns whether the given date is in the past (before today).
+ */
+export function isInPast(date: Date): boolean {
+    return startOfDay(date) < startOfDay(new Date())
+}
+
+/**
  * Returns the number of whole days until the given future date.
  * Returns 0 if the date is today or in the past.
  */
@@ -22,6 +29,52 @@ export function calculateDaysSince(date: Date): number {
     const target = startOfDay(date)
     const diff = today.getTime() - target.getTime()
     return Math.max(0, Math.round(diff / MS_PER_DAY))
+}
+
+/**
+ * Calculates the duration between two dates as years, months, and days.
+ * Always returns positive values (uses absolute difference).
+ */
+export function calculateDuration(from: Date, to: Date): { years: number; months: number; days: number } {
+    // Ensure from <= to
+    let start = startOfDay(from)
+    let end = startOfDay(to)
+    if (start > end) {
+        const temp = start
+        start = end
+        end = temp
+    }
+
+    let years = end.getFullYear() - start.getFullYear()
+    let months = end.getMonth() - start.getMonth()
+    let days = end.getDate() - start.getDate()
+
+    if (days < 0) {
+        months -= 1
+        // days in previous month
+        const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0)
+        days += prevMonth.getDate()
+    }
+
+    if (months < 0) {
+        years -= 1
+        months += 12
+    }
+
+    return { years, months, days }
+}
+
+/**
+ * Formats a duration between two dates using a format string.
+ * Tokens: YY → years, MM → months, DD → days
+ * Example: "YY year MM month DD day" → "1 year 3 month 15 day"
+ */
+export function formatDuration(from: Date, to: Date, format: string): string {
+    const dur = calculateDuration(from, to)
+    return format
+        .replace('YY', String(dur.years))
+        .replace('MM', String(dur.months))
+        .replace('DD', String(dur.days))
 }
 
 /**
@@ -46,38 +99,6 @@ export function getNextOccurrence(anchor: Date, rule: RecurrenceRule): Date {
     }
 
     return next
-}
-
-/**
- * Returns a human-readable label for a day count.
- * e.g. "Today", "Tomorrow", "3 days"
- */
-export function formatDayCount(days: number, direction: 'past' | 'future'): string {
-    if (days === 0) return 'Today'
-    if (days === 1) return direction === 'future' ? 'Tomorrow' : 'Yesterday'
-    return direction === 'future' ? `${days} days` : `${days} days`
-}
-
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-/**
- * Formats a date using a custom format string.
- * Supported tokens: YYYY, YY, MMMM, MMM, MM, DD
- * e.g. "DD MMM YYYY" → "23 Feb 2026"
- */
-export function formatDateCustom(date: Date, format: string): string {
-    const day = date.getDate()
-    const month = date.getMonth()
-    const year = date.getFullYear()
-
-    return format
-        .replace('YYYY', String(year))
-        .replace('YY', String(year).slice(-2))
-        .replace('MMMM', MONTH_LONG[month])
-        .replace('MMM', MONTH_SHORT[month])
-        .replace('MM', String(month + 1).padStart(2, '0'))
-        .replace('DD', String(day).padStart(2, '0'))
 }
 
 /** Normalises a Date to midnight local time for clean day comparisons. */

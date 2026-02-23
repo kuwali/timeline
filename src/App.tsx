@@ -1,18 +1,35 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { TimelineEvent } from './types/TimelineEvent'
 import { useEvents } from './hooks/useEvents'
-import { EventList } from './components/EventList'
+import { TimelineView } from './components/TimelineView'
 import { EventForm } from './components/EventForm'
 import { ConfirmDialog } from './components/ConfirmDialog'
+import { CategoryFilter } from './components/CategoryFilter'
+import { CategoryManager } from './components/CategoryManager'
 
 export function App() {
-    const { events, loading, sortMode, setSortMode, createEvent, editEvent, removeEvent, reorderEvent } = useEvents()
+    const {
+        events, categories, loading,
+        sortMode, setSortMode,
+        createEvent, editEvent, removeEvent, reorderEvent,
+        addCategory, editCategory, removeCategory,
+    } = useEvents()
+
     const [formOpen, setFormOpen] = useState(false)
     const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null)
-
-    // Confirm dialog state
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+    const [catManagerOpen, setCatManagerOpen] = useState(false)
+    const [filterCategory, setFilterCategory] = useState<string | null>(null)
+
+    // Compute which categories are in use
+    const usedCategoryIds = useMemo(() => {
+        const ids = new Set<string>()
+        for (const e of events) {
+            if (e.categoryId) ids.add(e.categoryId)
+        }
+        return ids
+    }, [events])
 
     function handleEdit(event: TimelineEvent) {
         setEditingEvent(event)
@@ -35,9 +52,7 @@ export function App() {
     }
 
     async function handleDeleteConfirm() {
-        if (pendingDeleteId) {
-            await removeEvent(pendingDeleteId)
-        }
+        if (pendingDeleteId) await removeEvent(pendingDeleteId)
         setConfirmOpen(false)
         setPendingDeleteId(null)
     }
@@ -61,7 +76,14 @@ export function App() {
                     </div>
                     <div className="app-header__controls">
                         <button
-                            id="sort-mode-btn"
+                            className="btn btn--ghost btn--sm btn--icon"
+                            onClick={() => setCatManagerOpen(true)}
+                            aria-label="Manage categories"
+                            title="Categories"
+                        >
+                            ⚙️
+                        </button>
+                        <button
                             className="btn btn--ghost btn--sm"
                             onClick={toggleSortMode}
                             aria-label={`Sort: ${sortMode === 'auto' ? 'Chronological' : 'Manual'}`}
@@ -70,7 +92,6 @@ export function App() {
                             {sortMode === 'auto' ? '📊 Auto' : '✋ Manual'}
                         </button>
                         <button
-                            id="add-event-btn"
                             className="btn btn--primary"
                             onClick={handleAdd}
                             aria-label="Add new event"
@@ -79,13 +100,22 @@ export function App() {
                         </button>
                     </div>
                 </div>
+
+                <CategoryFilter
+                    categories={categories}
+                    usedCategoryIds={usedCategoryIds}
+                    activeFilter={filterCategory}
+                    onFilter={setFilterCategory}
+                />
             </header>
 
             <main className="app-main">
-                <EventList
+                <TimelineView
                     events={events}
+                    categories={categories}
                     loading={loading}
                     sortMode={sortMode}
+                    filterCategory={filterCategory}
                     onEdit={handleEdit}
                     onDelete={handleDeleteRequest}
                     onMoveUp={id => reorderEvent(id, 'up')}
@@ -95,10 +125,21 @@ export function App() {
 
             <EventForm
                 isOpen={formOpen}
+                categories={categories}
                 initialEvent={editingEvent}
                 onSave={createEvent}
                 onUpdate={editEvent}
                 onClose={handleClose}
+                onManageCategories={() => { handleClose(); setCatManagerOpen(true) }}
+            />
+
+            <CategoryManager
+                isOpen={catManagerOpen}
+                categories={categories}
+                onAdd={addCategory}
+                onEdit={editCategory}
+                onDelete={removeCategory}
+                onClose={() => setCatManagerOpen(false)}
             />
 
             <ConfirmDialog

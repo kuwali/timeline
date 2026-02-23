@@ -1,50 +1,65 @@
 import { useState, useEffect } from 'react'
 import type { TimelineEvent, RecurrenceRule } from '../types/TimelineEvent'
+import type { Category } from '../types/Category'
 
-const CATEGORIES = ['life', 'work', 'travel', 'health', 'milestone', 'birthday', 'other']
-const ICONS = ['🎂', '✈️', '🏆', '💼', '❤️', '🎓', '🏠', '🌟', '🎯', '📅', '💪', '🌍', '🚀', '🎉', '🧘']
+const FORMAT_PRESETS = [
+    { label: 'Days only (default)', value: '' },
+    { label: 'Years, Months, Days', value: 'YY year MM month DD day' },
+    { label: 'Months and Days', value: 'MM month DD day' },
+    { label: 'Custom…', value: '__custom__' },
+]
 
 interface EventFormProps {
     isOpen: boolean
+    categories: Category[]
     initialEvent?: TimelineEvent | null
     onSave: (draft: Omit<TimelineEvent, 'id' | 'sortOrder'>) => void
     onUpdate: (event: TimelineEvent) => void
     onClose: () => void
+    onManageCategories: () => void
 }
 
 function todayISO(): string {
     return new Date().toISOString().split('T')[0]
 }
 
-export function EventForm({ isOpen, initialEvent, onSave, onUpdate, onClose }: EventFormProps) {
+export function EventForm({ isOpen, categories, initialEvent, onSave, onUpdate, onClose, onManageCategories }: EventFormProps) {
     const isEditing = initialEvent != null
 
     const [title, setTitle] = useState('')
     const [anchorDate, setAnchorDate] = useState(todayISO())
-    const [direction, setDirection] = useState<'past' | 'future'>('future')
-    const [category, setCategory] = useState<string>('other')
-    const [icon, setIcon] = useState<string>('🎯')
+    const [categoryId, setCategoryId] = useState<string>('other')
     const [recurrenceType, setRecurrenceType] = useState<RecurrenceRule['type'] | ''>('')
-    const [displayFormat, setDisplayFormat] = useState<string>('')
+    const [formatPreset, setFormatPreset] = useState('')
+    const [customFormat, setCustomFormat] = useState('')
 
-    // Populate fields when editing
     useEffect(() => {
         if (initialEvent) {
             setTitle(initialEvent.title)
             setAnchorDate(initialEvent.anchorDate.split('T')[0])
-            setDirection(initialEvent.direction)
-            setCategory(initialEvent.category ?? 'other')
-            setIcon(initialEvent.icon ?? '🎯')
+            setCategoryId(initialEvent.categoryId ?? 'other')
             setRecurrenceType(initialEvent.recurrenceRule?.type ?? '')
-            setDisplayFormat(initialEvent.displayFormat ?? '')
+
+            // Determine preset or custom
+            const fmt = initialEvent.displayFormat ?? ''
+            const matchingPreset = FORMAT_PRESETS.find(p => p.value === fmt && p.value !== '__custom__')
+            if (matchingPreset) {
+                setFormatPreset(fmt)
+                setCustomFormat('')
+            } else if (fmt) {
+                setFormatPreset('__custom__')
+                setCustomFormat(fmt)
+            } else {
+                setFormatPreset('')
+                setCustomFormat('')
+            }
         } else {
             setTitle('')
             setAnchorDate(todayISO())
-            setDirection('future')
-            setCategory('other')
-            setIcon('🎯')
+            setCategoryId('other')
             setRecurrenceType('')
-            setDisplayFormat('')
+            setFormatPreset('')
+            setCustomFormat('')
         }
     }, [initialEvent, isOpen])
 
@@ -52,14 +67,14 @@ export function EventForm({ isOpen, initialEvent, onSave, onUpdate, onClose }: E
         e.preventDefault()
         if (!title.trim() || !anchorDate) return
 
+        const displayFormat = formatPreset === '__custom__' ? customFormat.trim() : formatPreset
+
         const draft: Omit<TimelineEvent, 'id' | 'sortOrder'> = {
             title: title.trim(),
             anchorDate,
-            direction,
-            category,
-            icon,
+            categoryId,
             recurrenceRule: recurrenceType ? { type: recurrenceType } : undefined,
-            displayFormat: displayFormat.trim() || undefined,
+            displayFormat: displayFormat || undefined,
             notificationConfig: null,
         }
 
@@ -76,6 +91,8 @@ export function EventForm({ isOpen, initialEvent, onSave, onUpdate, onClose }: E
     }
 
     if (!isOpen) return null
+
+    const selectedCategory = categories.find(c => c.id === categoryId)
 
     return (
         <div className="modal-backdrop" onClick={handleBackdropClick} role="dialog" aria-modal aria-label="Event editor">
@@ -112,29 +129,34 @@ export function EventForm({ isOpen, initialEvent, onSave, onUpdate, onClose }: E
                             onChange={e => setAnchorDate(e.target.value)}
                             required
                         />
+                        <span className="form-hint">Past dates → "days ago" · Future dates → "days until"</span>
                     </div>
 
-                    {/* Direction */}
+                    {/* Category */}
                     <div className="form-group">
-                        <span className="form-label">Type</span>
-                        <div className="toggle-group" role="group" aria-label="Event direction">
-                            <button
-                                type="button"
-                                id="dir-future"
-                                className={`toggle-btn ${direction === 'future' ? 'toggle-btn--active' : ''}`}
-                                onClick={() => setDirection('future')}
-                            >
-                                🔮 Upcoming
-                            </button>
-                            <button
-                                type="button"
-                                id="dir-past"
-                                className={`toggle-btn ${direction === 'past' ? 'toggle-btn--active' : ''}`}
-                                onClick={() => setDirection('past')}
-                            >
-                                📖 Past
-                            </button>
+                        <div className="form-label-row">
+                            <label htmlFor="event-category" className="form-label">Category</label>
+                            <button type="button" className="form-link" onClick={onManageCategories}>Manage →</button>
                         </div>
+                        <div className="category-select">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    type="button"
+                                    className={`category-select__btn ${categoryId === cat.id ? 'category-select__btn--selected' : ''}`}
+                                    style={categoryId === cat.id ? { borderColor: cat.color, background: cat.color + '15' } : undefined}
+                                    onClick={() => setCategoryId(cat.id)}
+                                >
+                                    <span>{cat.icon}</span>
+                                    <span className="category-select__name">{cat.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                        {selectedCategory && (
+                            <div className="form-hint" style={{ color: selectedCategory.color }}>
+                                {selectedCategory.icon} {selectedCategory.name}
+                            </div>
+                        )}
                     </div>
 
                     {/* Recurrence */}
@@ -152,54 +174,32 @@ export function EventForm({ isOpen, initialEvent, onSave, onUpdate, onClose }: E
                         </select>
                     </div>
 
-                    {/* Category */}
-                    <div className="form-group">
-                        <label htmlFor="event-category" className="form-label">Category</label>
-                        <select
-                            id="event-category"
-                            className="form-input"
-                            value={category}
-                            onChange={e => setCategory(e.target.value)}
-                        >
-                            {CATEGORIES.map(c => (
-                                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-                            ))}
-                        </select>
-                    </div>
-
                     {/* Display Format */}
                     <div className="form-group">
-                        <label htmlFor="event-display-format" className="form-label">Display Format</label>
-                        <input
-                            id="event-display-format"
+                        <label htmlFor="event-format" className="form-label">Display Format</label>
+                        <select
+                            id="event-format"
                             className="form-input"
-                            type="text"
-                            placeholder="DD MMM YYYY"
-                            value={displayFormat}
-                            onChange={e => setDisplayFormat(e.target.value)}
-                        />
-                        <span className="form-hint">
-                            Tokens: DD, MM, MMM, MMMM, YY, YYYY — e.g. "DD MMM" → "23 Feb"
-                        </span>
-                    </div>
-
-                    {/* Icon picker */}
-                    <div className="form-group">
-                        <span className="form-label">Icon</span>
-                        <div className="icon-picker" role="group" aria-label="Choose icon">
-                            {ICONS.map(i => (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    className={`icon-picker__btn ${icon === i ? 'icon-picker__btn--selected' : ''}`}
-                                    onClick={() => setIcon(i)}
-                                    aria-label={i}
-                                    aria-pressed={icon === i}
-                                >
-                                    {i}
-                                </button>
+                            value={formatPreset}
+                            onChange={e => {
+                                setFormatPreset(e.target.value)
+                                if (e.target.value !== '__custom__') setCustomFormat('')
+                            }}
+                        >
+                            {FORMAT_PRESETS.map(p => (
+                                <option key={p.value} value={p.value}>{p.label}</option>
                             ))}
-                        </div>
+                        </select>
+                        {formatPreset === '__custom__' && (
+                            <input
+                                className="form-input"
+                                type="text"
+                                placeholder="YY year MM month DD day"
+                                value={customFormat}
+                                onChange={e => setCustomFormat(e.target.value)}
+                            />
+                        )}
+                        <span className="form-hint">Tokens: YY (years), MM (months), DD (days) — e.g. "YY年 MM月 DD日"</span>
                     </div>
 
                     <div className="modal__actions">

@@ -7,6 +7,7 @@ import { ConfirmDialog } from './components/ConfirmDialog'
 import { CategoryFilter } from './components/CategoryFilter'
 import { CategoryManager } from './components/CategoryManager'
 import { EventDetailModal } from './components/EventDetailModal'
+import { SettingsMenu } from './components/SettingsMenu'
 import { useTheme } from './hooks/useTheme'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { downloadICS } from './utils/calendarSync'
@@ -14,7 +15,7 @@ import { exportBackup, importBackup } from './utils/dataBackup'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
-    const { showUpdate, applyUpdate, dismissUpdate } = useServiceWorker()
+    const { showUpdate, updateAvailable, applyUpdate, dismissUpdate } = useServiceWorker()
 
     const {
         events, categories, loading,
@@ -89,6 +90,16 @@ export function App() {
         e.target.value = '' // reset for re-import
     }
 
+    function handleCheckForUpdates() {
+        if (updateAvailable) {
+            applyUpdate()
+        } else {
+            // Manually trigger SW update check
+            navigator.serviceWorker?.getRegistration().then(reg => reg?.update())
+            alert('Checking for updates…')
+        }
+    }
+
     return (
         <div className="app">
             {/* Hidden file input for import */}
@@ -107,46 +118,18 @@ export function App() {
                         <h1 className="app-header__title">Timeline</h1>
                     </div>
                     <div className="app-header__controls">
-                        <button
-                            className="btn btn--ghost btn--sm btn--icon"
-                            onClick={toggleTheme}
-                            aria-label={`Toggle theme (current: ${theme})`}
-                            title="Toggle Theme"
-                        >
-                            {theme === 'dark' ? '☀️' : '🌙'}
-                        </button>
-                        <button
-                            className="btn btn--ghost btn--sm btn--icon"
-                            onClick={exportBackup}
-                            aria-label="Export backup"
-                            title="Export Data"
-                        >
-                            📤
-                        </button>
-                        <button
-                            className="btn btn--ghost btn--sm btn--icon"
-                            onClick={() => fileInputRef.current?.click()}
-                            aria-label="Import backup"
-                            title="Import Data"
-                        >
-                            📥
-                        </button>
-                        <button
-                            className="btn btn--ghost btn--sm btn--icon"
-                            onClick={() => setCatManagerOpen(true)}
-                            aria-label="Manage categories"
-                            title="Categories"
-                        >
-                            ⚙️
-                        </button>
-                        <button
-                            className="btn btn--ghost btn--sm"
-                            onClick={toggleSortMode}
-                            aria-label={`Sort: ${sortMode === 'auto' ? 'Chronological' : 'Manual'}`}
-                            title={`Sort: ${sortMode === 'auto' ? 'Chronological' : 'Manual'}`}
-                        >
-                            {sortMode === 'auto' ? '📊 Auto' : '✋ Manual'}
-                        </button>
+                        <SettingsMenu
+                            theme={theme}
+                            sortMode={sortMode}
+                            updateAvailable={updateAvailable}
+                            categories={categories}
+                            onToggleTheme={toggleTheme}
+                            onToggleSortMode={toggleSortMode}
+                            onExport={exportBackup}
+                            onImport={() => fileInputRef.current?.click()}
+                            onManageCategories={() => setCatManagerOpen(true)}
+                            onCheckForUpdates={handleCheckForUpdates}
+                        />
                         <button
                             className="btn btn--primary"
                             onClick={handleAdd}

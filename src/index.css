@@ -202,6 +202,79 @@ ul {
   }
 }
 
+/* ── Settings Menu ─────────────────────────────────────────────── */
+.settings-menu {
+  position: relative;
+}
+
+.settings-menu__trigger {
+  font-size: 1.2rem !important;
+}
+
+.settings-menu__dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 150;
+  min-width: 220px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  animation: fadeIn var(--transition-fast) both;
+  overflow: hidden;
+}
+
+.settings-menu__section {
+  padding: var(--space-1) 0;
+}
+
+.settings-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  text-align: left;
+}
+
+.settings-menu__item:hover {
+  background: var(--color-surface-2);
+}
+
+.settings-menu__item--highlight {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.settings-menu__icon {
+  font-size: 1rem;
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.settings-menu__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0;
+}
+
+.settings-menu__footer {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+}
+
 /* ── Main ───────────────────────────────────────────────────────── */
 .app-main {
   flex: 1;

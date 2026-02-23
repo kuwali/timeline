@@ -8,11 +8,13 @@ import { CategoryFilter } from './components/CategoryFilter'
 import { CategoryManager } from './components/CategoryManager'
 import { EventDetailModal } from './components/EventDetailModal'
 import { useTheme } from './hooks/useTheme'
+import { useServiceWorker } from './hooks/useServiceWorker'
 import { downloadICS } from './utils/calendarSync'
 import { exportBackup, importBackup } from './utils/dataBackup'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
+    const { showUpdate, applyUpdate, dismissUpdate } = useServiceWorker()
 
     const {
         events, categories, loading,
@@ -215,6 +217,17 @@ export function App() {
                 onConfirm={handleDeleteConfirm}
                 onCancel={handleDeleteCancel}
             />
+
+            {/* PWA Update Toast */}
+            {showUpdate && (
+                <div className="update-toast">
+                    <span className="update-toast__text">🚀 A new version is available!</span>
+                    <div className="update-toast__actions">
+                        <button className="btn btn--primary btn--sm" onClick={applyUpdate}>Update now</button>
+                        <button className="btn btn--ghost btn--sm" onClick={dismissUpdate}>Later</button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

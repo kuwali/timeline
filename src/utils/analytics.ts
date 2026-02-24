@@ -26,8 +26,13 @@ function detectBrowser(): string {
 }
 
 function isPWA(): boolean {
+    // iOS: navigator.standalone is the only reliable check
+    if ('standalone' in navigator) {
+        return (navigator as any).standalone === true
+    }
+    // Android / Desktop: standard media query
     return window.matchMedia('(display-mode: standalone)').matches
-        || (navigator as any).standalone === true
+        || window.matchMedia('(display-mode: fullscreen)').matches
 }
 
 /**

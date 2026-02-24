@@ -8,6 +8,7 @@ import { CategoryFilter } from './components/CategoryFilter'
 import { CategoryManager } from './components/CategoryManager'
 import { EventDetailModal } from './components/EventDetailModal'
 import { SettingsMenu } from './components/SettingsMenu'
+import { OnboardingTutorial } from './components/OnboardingTutorial'
 import { useTheme } from './hooks/useTheme'
 import { useServiceWorker } from './hooks/useServiceWorker'
 import { downloadICS } from './utils/calendarSync'
@@ -28,6 +29,8 @@ import {
     trackPWAUpdateApplied,
     trackPWAUpdateDismissed,
     trackScrollToToday,
+    trackOnboardingCompleted,
+    trackOnboardingSkipped,
 } from './utils/analytics'
 
 export function App() {
@@ -38,6 +41,21 @@ export function App() {
     useEffect(() => {
         initAnalytics()
     }, [])
+
+    // Onboarding: show once for new users
+    const [showOnboarding, setShowOnboarding] = useState(() => {
+        return !localStorage.getItem('timeline-onboarding-done')
+    })
+
+    function handleOnboardingComplete(skippedAtStep?: number) {
+        localStorage.setItem('timeline-onboarding-done', '1')
+        setShowOnboarding(false)
+        if (skippedAtStep !== undefined) {
+            trackOnboardingSkipped(skippedAtStep)
+        } else {
+            trackOnboardingCompleted()
+        }
+    }
 
     const {
         events, categories, loading,
@@ -155,6 +173,11 @@ export function App() {
 
     return (
         <div className="app">
+            {/* Onboarding for first-time users */}
+            {showOnboarding && (
+                <OnboardingTutorial onComplete={() => handleOnboardingComplete()} />
+            )}
+
             {/* Hidden file input for import */}
             <input
                 ref={fileInputRef}

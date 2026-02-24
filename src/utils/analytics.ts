@@ -170,3 +170,13 @@ export function trackPWAUpdateDismissed() {
 export function trackScrollToToday(direction: 'up' | 'down') {
     trackEvent('scroll_to_today', { direction })
 }
+
+// ── Onboarding ───────────────────────────────────────────────────
+
+export function trackOnboardingCompleted() {
+    trackEvent('onboarding_completed')
+}
+
+export function trackOnboardingSkipped(step: number) {
+    trackEvent('onboarding_skipped', { skipped_at_step: step })
+}

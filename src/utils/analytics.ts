@@ -56,6 +56,7 @@ const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '
 // ── Initialization ───────────────────────────────────────────────
 
 let initialized = false
+let userProps: Record<string, string> = {}
 
 /**
  * Call once on app startup to set user properties and anonymous ID.
@@ -67,18 +68,21 @@ export function initAnalytics() {
     const uid = getAnonymousUserId()
     setUserId(analytics, uid)
 
-    setUserProperties(analytics, {
+    // Compute properties
+    userProps = {
         os: detectOS(),
         browser: detectBrowser(),
         app_version: APP_VERSION,
         is_pwa: isPWA() ? 'yes' : 'no',
-    })
+    }
 
-    // Track app open as a session event
-    trackEvent('app_opened', {
-        is_pwa: isPWA() ? 'yes' : 'no',
-        app_version: APP_VERSION,
-    })
+    // Set each property individually (Firebase requires this for custom user properties)
+    for (const [key, value] of Object.entries(userProps)) {
+        setUserProperties(analytics, { [key]: value })
+    }
+
+    // Track app open as a session event (include all user props as event params too)
+    trackEvent('app_opened', { ...userProps })
 }
 
 // ── Core tracker ─────────────────────────────────────────────────

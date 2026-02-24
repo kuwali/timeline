@@ -13,17 +13,31 @@ import { useServiceWorker } from './hooks/useServiceWorker'
 import { downloadICS } from './utils/calendarSync'
 import { exportBackup, importBackup } from './utils/dataBackup'
 import {
+    initAnalytics,
     trackThemeChange,
     trackSortModeChange,
     trackDataImported,
     trackDataExported,
     trackEventOpened,
-    trackCategoryFiltered
+    trackCategoryFiltered,
+    trackEventReordered,
+    trackEventExportedICS,
+    trackCategoryCreated,
+    trackCategoryEdited,
+    trackCategoryDeleted,
+    trackPWAUpdateApplied,
+    trackPWAUpdateDismissed,
+    trackScrollToToday,
 } from './utils/analytics'
 
 export function App() {
     const { theme, toggleTheme } = useTheme()
     const { showUpdate, updateAvailable, checking, applyUpdate, dismissUpdate, checkForUpdate } = useServiceWorker()
+
+    // Initialize analytics (user properties, session) once on mount
+    useEffect(() => {
+        initAnalytics()
+    }, [])
 
     const {
         events, categories, loading,
@@ -136,6 +150,7 @@ export function App() {
     function scrollToToday() {
         const todayEl = document.querySelector('[data-today-marker]')
         todayEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        if (todayDirection) trackScrollToToday(todayDirection)
     }
 
     return (
@@ -208,8 +223,8 @@ export function App() {
                         setDetailEvent(evt)
                         trackEventOpened(evt.categoryId)
                     }}
-                    onMoveUp={id => reorderEvent(id, 'up')}
-                    onMoveDown={id => reorderEvent(id, 'down')}
+                    onMoveUp={id => { reorderEvent(id, 'up'); trackEventReordered('up') }}
+                    onMoveDown={id => { reorderEvent(id, 'down'); trackEventReordered('down') }}
                 />
             </main>
 
@@ -226,9 +241,9 @@ export function App() {
             <CategoryManager
                 isOpen={catManagerOpen}
                 categories={categories}
-                onAdd={addCategory}
-                onEdit={editCategory}
-                onDelete={removeCategory}
+                onAdd={(cat) => { addCategory(cat); trackCategoryCreated() }}
+                onEdit={(cat) => { editCategory(cat); trackCategoryEdited() }}
+                onDelete={(id) => { removeCategory(id); trackCategoryDeleted() }}
                 onClose={() => setCatManagerOpen(false)}
             />
 
@@ -239,7 +254,7 @@ export function App() {
                 onClose={() => setDetailEvent(null)}
                 onEdit={handleEdit}
                 onDelete={handleDeleteRequest}
-                onExport={(evt) => downloadICS(evt)}
+                onExport={(evt) => { downloadICS(evt); trackEventExportedICS() }}
             />
 
             <ConfirmDialog
@@ -258,8 +273,8 @@ export function App() {
                 <div className="update-toast">
                     <span className="update-toast__text">🚀 A new version is available!</span>
                     <div className="update-toast__actions">
-                        <button className="btn btn--primary btn--sm" onClick={applyUpdate}>Update now</button>
-                        <button className="btn btn--ghost btn--sm" onClick={dismissUpdate}>Later</button>
+                        <button className="btn btn--primary btn--sm" onClick={() => { applyUpdate(); trackPWAUpdateApplied() }}>Update now</button>
+                        <button className="btn btn--ghost btn--sm" onClick={() => { dismissUpdate(); trackPWAUpdateDismissed() }}>Later</button>
                     </div>
                 </div>
             )}

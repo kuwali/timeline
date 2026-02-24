@@ -1,5 +1,5 @@
 import { logEvent, setUserProperties, setUserId } from 'firebase/analytics'
-import { analytics } from './firebase'
+import { getAnalyticsInstance, waitForAnalytics } from './firebase'
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -60,10 +60,14 @@ let userProps: Record<string, string> = {}
 
 /**
  * Call once on app startup to set user properties and anonymous ID.
+ * Awaits analytics readiness (async init for iOS PWA support).
  */
-export function initAnalytics() {
-    if (!analytics || initialized) return
+export async function initAnalytics() {
+    if (initialized) return
     initialized = true
+
+    const analytics = await waitForAnalytics()
+    if (!analytics) return
 
     const uid = getAnonymousUserId()
     setUserId(analytics, uid)
@@ -88,6 +92,7 @@ export function initAnalytics() {
 // ── Core tracker ─────────────────────────────────────────────────
 
 export function trackEvent(eventName: string, eventParams?: Record<string, any>) {
+    const analytics = getAnalyticsInstance()
     if (analytics) {
         try {
             logEvent(analytics, eventName, eventParams)

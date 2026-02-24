@@ -80,25 +80,47 @@ export async function initAnalytics() {
         is_pwa: isPWA() ? 'yes' : 'no',
     }
 
-    // Set each property individually (Firebase requires this for custom user properties)
+    // Set each property individually
     for (const [key, value] of Object.entries(userProps)) {
         setUserProperties(analytics, { [key]: value })
     }
 
-    // Track app open as a session event (include all user props as event params too)
-    trackEvent('app_opened', { ...userProps })
+    // Small delay to let gtag's internal transport finish setting up
+    // before firing the first event (fixes Safari timing issue)
+    setTimeout(() => {
+        logEvent(analytics, 'app_opened', { ...userProps })
+        flushPendingEvents()
+    }, 500)
 }
 
 // ── Core tracker ─────────────────────────────────────────────────
 
+// Buffer events that fire before analytics is ready (e.g. onboarding events on Safari)
+const pendingEvents: Array<{ name: string; params?: Record<string, any> }> = []
+let analyticsReady = false
+
+// Called internally after init to flush any buffered events
+function flushPendingEvents() {
+    analyticsReady = true
+    const inst = getAnalyticsInstance()
+    if (!inst) return
+    for (const evt of pendingEvents) {
+        try { logEvent(inst, evt.name, evt.params) } catch { }
+    }
+    pendingEvents.length = 0
+}
+
 export function trackEvent(eventName: string, eventParams?: Record<string, any>) {
     const analytics = getAnalyticsInstance()
-    if (analytics) {
+    if (analytics && analyticsReady) {
         try {
             logEvent(analytics, eventName, eventParams)
         } catch (error) {
             console.warn('Analytics: failed to log', eventName, error)
         }
+    } else {
+        // Queue for later
+        pendingEvents.push({ name: eventName, params: eventParams })
     }
 }
 
